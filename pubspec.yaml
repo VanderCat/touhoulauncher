@@ -43,6 +43,7 @@ dependencies:
   cached_network_image: ^3.2.0
   shared_preferences: ^2.0.13
   file_picker: ^4.5.1
+  settings_ui: ^2.0.2
 
 dev_dependencies:
   flutter_test:

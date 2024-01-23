@@ -6,7 +6,8 @@ import 'package:window_size/window_size.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:touhou_launcher/settings.dart';
+import 'package:touhou_launcher/theme.dart';
 
 late List <Game> games;
 
@@ -31,12 +32,16 @@ void main() async {
   //games = await Game.load(thcrap);
   runApp(
     MaterialApp(
+      useInheritedMediaQuery: true,
       title: 'Touhou Launcher',
-      home: const TouhouLauncher(),
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSwatch(accentColor: Colors.purpleAccent, brightness: Brightness.dark)
-      ),
+      initialRoute: '/',
+      routes: {
+        // When navigating to the "/" route, build the FirstScreen widget.
+        '/': (context) => const TouhouLauncher(),
+        // When navigating to the "/second" route, build the SecondScreen widget.
+        '/settings': (context) => const Settings(),
+      },
+      theme: NewMDDarkTheme.theme,
     ),
   );
 }
@@ -51,9 +56,7 @@ class TouhouLauncher extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Touhou Launcher'),
-        backgroundColor: const Color(0xAA272727),
       ),
-      backgroundColor: const Color(0xAA121212),
       // body is the majority of the screen.
       body: Flex(
         direction: Axis.vertical,
@@ -61,10 +64,12 @@ class TouhouLauncher extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [GameList()]
       ),
-      floatingActionButton: const FloatingActionButton(
+      floatingActionButton: FloatingActionButton(
         tooltip: 'Add', // used by assistive technologies
-        child: Icon(Icons.settings),
-        onPressed: null,
+        child: const Icon(Icons.settings),
+        onPressed: () {
+          Navigator.pushNamed(context, '/settings');
+        },
       ),
     );
   }
@@ -83,7 +88,6 @@ class GameCard extends StatelessWidget {
       width: double.infinity,
       height: 128,
       child: Card(
-        color: Color(0xAA1b1b1b),
         child: Container(
           margin: EdgeInsets.all(16),
           child: Row(
@@ -100,7 +104,6 @@ class GameCard extends StatelessWidget {
                 progressIndicatorBuilder: (context, url, downloadProgress) => 
                   CircularProgressIndicator(
                     value: downloadProgress.progress,
-                    color: Theme.of(context).colorScheme.secondary
                     ),
                 errorWidget: (context, url, error) => Icon(Icons.error),
               ),
@@ -152,9 +155,6 @@ class GameControls extends StatelessWidget {
           }, 
           icon: const Icon(Icons.help_outline, size: 16),
           label: const Text("Wiki"),
-          style: TextButton.styleFrom(
-            primary: Theme.of(context).colorScheme.secondary,
-          ),
         ),
           TextButton.icon(
             onPressed: game.configId != null ? () {
@@ -163,9 +163,6 @@ class GameControls extends StatelessWidget {
             } : null, 
             icon: const Icon(Icons.settings, size: 16),
             label: const Text("Settings"),
-            style: TextButton.styleFrom(
-              primary: Theme.of(context).colorScheme.secondary,
-            ),
           ),
         ElevatedButton.icon(
           onPressed: () {
@@ -174,9 +171,6 @@ class GameControls extends StatelessWidget {
           },
           icon: const Icon(Icons.play_arrow, size: 16),
           label: const Text("PLAY"),
-          style: ElevatedButton.styleFrom(
-            primary: Theme.of(context).colorScheme.secondary,
-          ),
         )
       ],
     );
@@ -216,62 +210,11 @@ class _GameListState extends State<GameList> {
   Widget build(BuildContext context) {
     Future.delayed(Duration.zero,(){
       if (isLoading && (thcrap == null || thcrap == "")) {
-        var path = "";
-        showDialog(
-          barrierDismissible: false,
-          context: context,
-          builder: (contex) {
-          return AlertDialog (
-            title: const Text("Please provide path to THCRAP"),
-            content: TextField(
-              decoration: InputDecoration(
-                border: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.secondary)),
-                hintText: 'C:\\THCRAP\\thcrap.exe',
-              ),
-              onChanged: (txt) => path = txt,
-            ),
-            actions: [
-              TextButton(
-                child: const Text('OK'),
-                onPressed: () {
-                  if (path.endsWith("thcrap.exe")) {
-                    pref.setString('thcrap', path.replaceAll("thcrap.exe", ""));
-                    initialization();
-                    Navigator.of(context).pop();
-                  }
-                },
-                style: TextButton.styleFrom(
-                  primary: Theme.of(context).colorScheme.secondary,
-                ),
-              ),
-              TextButton(
-                child: const Text('Pick'),
-                onPressed: () {
-                  FilePicker.platform.pickFiles(
-                    type: FileType.custom,
-                    allowedExtensions: ["exe"]
-                  ).then((result) {
-                    if (result != null) {
-                      pref.setString('thcrap', result.files.single.path?.replaceAll("thcrap.exe", "")??"");
-                      initialization();
-                      Navigator.of(context).pop();
-                    }
-                  });
-                },
-                style: TextButton.styleFrom(
-                  primary: Theme.of(context).colorScheme.secondary,
-                ),
-              ),
-            ],
-            backgroundColor: Color.fromARGB(255, 55, 55, 55),
-          );
-        });
+        Settings.thcrapPath(context, pref, initialization);
       }
     });
     return isLoading ? 
-       Center(child: CircularProgressIndicator(
-         color: Theme.of(context).colorScheme.secondary,
-       )) :
+       const Center(child: CircularProgressIndicator()) :
        Expanded(
           child: 
             ListView.builder(
